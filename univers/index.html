@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>bd-un</title>
+    <style>
+      :root {
+        --bg: #05060a;
+        --text: #ffffffeb;
+        --muted: #ffffffad;
+        --panel: #0a0c129e;
+        --panelBorder: #ffffff1f;
+        --accent: #ffd48a;
+        --accent2: #8ad3ff;
+        --danger: #ff6b6b;
+        --shadow: 0 20px 60px #0000008c;
+        --radius: 18px;
+        --mono:
+          ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+          monospace;
+        --sans:
+          ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial,
+          "Noto Sans", "Liberation Sans", sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body,
+      #root {
+        height: 100%;
+      }
+      body {
+        color: var(--text);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: radial-gradient(
+          1200px 900px at 50% 40%,
+          #0b1020 0%,
+          #05060a 70%
+        );
+        margin: 0;
+        overflow: hidden;
+      }
+      .app {
+        width: 100%;
+        height: 100%;
+        position: relative;
+      }
+      .canvasWrap {
+        z-index: 2;
+        position: absolute;
+        inset: 0;
+      }
+      .uiLayer {
+        pointer-events: none;
+        z-index: 3;
+        position: absolute;
+        inset: 0;
+      }
+      .panel {
+        pointer-events: auto;
+        background: var(--panel);
+        border: 1px solid var(--panelBorder);
+        border-radius: var(--radius);
+        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px);
+        width: min(420px, 100% - 32px);
+        box-shadow: var(--shadow);
+        padding: 14px 14px 12px;
+        position: absolute;
+        bottom: 16px;
+        left: 16px;
+      }
+      .panelHeader {
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        margin-bottom: 10px;
+        display: flex;
+      }
+      .panelTitle {
+        letter-spacing: 0.25px;
+        margin: 0;
+        font-size: 15px;
+      }
+      .panelMeta {
+        font-family: var(--mono);
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .panelBody {
+        color: #ffffffd1;
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .panelActions {
+        gap: 10px;
+        margin-top: 12px;
+        display: flex;
+      }
+      .btn {
+        pointer-events: auto;
+        appearance: none;
+        color: var(--text);
+        letter-spacing: 0.2px;
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+        background: #ffffff14;
+        border: 1px solid #ffffff29;
+        border-radius: 14px;
+        padding: 10px 12px;
+        font-size: 13px;
+        transition:
+          transform 0.18s,
+          background 0.18s,
+          border-color 0.18s;
+      }
+      .btn:hover {
+        background: #ffffff1c;
+        border-color: #ffffff42;
+        transform: translateY(-1px);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .btnPrimary {
+        background: linear-gradient(135deg, #ffd48a29, #8ad3ff1f);
+        border-color: #ffd48a73;
+      }
+      .badge {
+        font-family: var(--mono);
+        color: #ffffffc7;
+        background: #ffffff0f;
+        border: 1px solid #ffffff1f;
+        border-radius: 999px;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        font-size: 12px;
+        display: inline-flex;
+      }
+      .hud {
+        pointer-events: none;
+        flex-wrap: wrap;
+        gap: 10px;
+        display: flex;
+        position: absolute;
+        top: 16px;
+        left: 16px;
+      }
+      .hint {
+        pointer-events: none;
+        text-align: right;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        max-width: 540px;
+        display: flex;
+        position: absolute;
+        bottom: 16px;
+        right: 16px;
+      }
+      .hintText {
+        color: #ffffffb3;
+        font-size: 12px;
+        line-height: 1.35;
+      }
+      .lock {
+        place-items: center;
+        padding: 24px;
+        display: grid;
+        position: absolute;
+        inset: 0;
+      }
+      .lockCard {
+        -webkit-backdrop-filter: blur(14px);
+        backdrop-filter: blur(14px);
+        width: min(520px, 100%);
+        box-shadow: var(--shadow);
+        background: #0a0c129e;
+        border: 1px solid #ffffff1f;
+        border-radius: 26px;
+        padding: 20px 18px 18px;
+      }
+      .lockTitle {
+        letter-spacing: 0.2px;
+        margin: 0 0 8px;
+        font-size: 18px;
+        font-weight: 600;
+      }
+      .lockSub {
+        color: #ffffffb8;
+        margin: 0 0 14px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .pinRow {
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        display: flex;
+      }
+      .pinInput {
+        color: var(--text);
+        font-family: var(--mono);
+        letter-spacing: 6px;
+        background: #ffffff0f;
+        border: 1px solid #ffffff24;
+        border-radius: 16px;
+        outline: none;
+        flex: 1;
+        padding: 12px 14px;
+        font-size: 16px;
+      }
+      .pinInput:focus {
+        border-color: #8ad3ff6b;
+      }
+      .error {
+        color: #ff6b6beb;
+        margin-top: 10px;
+        font-size: 12px;
+      }
+      .finalOverlay {
+        pointer-events: none;
+        z-index: 4;
+        place-items: center;
+        padding: 24px;
+        display: grid;
+        position: absolute;
+        inset: 0;
+      }
+      .finalOverlayBackground {
+        background: radial-gradient(900px 500px, #ffd48a14, #8ad3ff0f, #0000);
+      }
+      .finalOverlayCelebrate {
+        background: radial-gradient(
+          1100px 620px at 50% 45%,
+          #ffd48a1f,
+          #8ad3ff14,
+          #0000
+        );
+      }
+      .finalTextWrap {
+        text-align: center;
+        -webkit-backdrop-filter: blur(3px);
+        backdrop-filter: blur(3px);
+        background: #080a1014;
+        border: 1px solid #ffffff0d;
+        border-radius: 24px;
+        width: min(1000px, 100%);
+        padding: 14px 18px;
+      }
+      .finalTitle {
+        letter-spacing: 3px;
+        color: #ffffff24;
+        text-shadow:
+          0 0 18px #ffd48a2e,
+          0 0 28px #8ad3ff29;
+        margin: 0;
+        font-size: clamp(42px, 8vw, 96px);
+        animation: 3s ease-in-out infinite glow;
+      }
+      .finalSub {
+        color: #ffffff61;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        margin: 10px 0 0;
+        font-size: clamp(14px, 2.6vw, 22px);
+      }
+      @keyframes glow {
+        0%,
+        to {
+          filter: drop-shadow(0 0 #ffd48a00) drop-shadow(0 0 #8ad3ff00);
+          transform: translateY(0);
+        }
+        50% {
+          filter: drop-shadow(0 0 26px #ffd48a54)
+            drop-shadow(0 0 34px #8ad3ff47);
+          transform: translateY(-2px);
+        }
+      }
+      .fxCanvas {
+        pointer-events: none;
+        opacity: 0.55;
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        inset: 0;
+      }
+      .finalDismissRow {
+        left: 50%;
+        bottom: max(24px, env(safe-area-inset-bottom, 0px));
+        pointer-events: auto;
+        z-index: 1;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        display: flex;
+        position: absolute;
+        transform: translate(-50%);
+      }
+      .finalDismissBtn {
+        min-width: 220px;
+      }
+      .finalDismissHint {
+        color: #ffffff8c;
+        letter-spacing: 0.4px;
+        margin: 0;
+        font-size: 12px;
+      }
+      @media (width<=560px) {
+        .panel {
+          width: calc(100% - 24px);
+          bottom: 12px;
+          left: 12px;
+        }
+        .hud {
+          top: 12px;
+          left: 12px;
+        }
+        .hint {
+          max-width: 80vw;
+          bottom: 12px;
+          right: 12px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="config.js"></script>
+    <script src="bundle.js"></script>
+  </body>
+</html>
+
+
