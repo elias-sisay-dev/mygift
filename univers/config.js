@@ -6,7 +6,7 @@ window.bdUniverseConfig = {
       id: "m1",
       title: "First Spark whaat",
       description: "The moment everything felt new — like the universe quietly saying hello.",
-      textureUrl: "https://picsum.photos/1024/768?random=2",
+      textureUrl: "https://imgur.com/zZ5SVzA",
       radius: 7.5,
       speed: 0.22,
       size: 0.9,
