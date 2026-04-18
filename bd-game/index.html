@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5" />
+    <title>Birthday Catch</title>
+    <style>
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body {
+        margin: 0;
+        color: #f8f7ff;
+        background: #070018;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        overflow-x: hidden;
+      }
+      button { font: inherit; cursor: pointer; }
+      button:focus-visible { outline: 2px solid #c084fc; outline-offset: 2px; }
+      .app-shell {
+        min-height: 100vh;
+        position: relative;
+        overflow: hidden;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
+      .background-layer,
+      .particle-layer { position: absolute; inset: 0; pointer-events: none; }
+      .background-layer {
+        background: radial-gradient(circle at top, rgba(168,85,247,0.24), transparent 28%),
+                 radial-gradient(circle at 80% 30%, rgba(236,72,153,0.14), transparent 22%),
+                 radial-gradient(circle at 20% 60%, rgba(59,130,246,0.12), transparent 18%),
+                 linear-gradient(180deg, #09001d 0%, #09001d 34%, #02020a 100%);
+      }
+      .particle-layer { overflow: hidden; }
+      .particle-layer span {
+        position: absolute;
+        border-radius: 9999px;
+        background: rgba(255,255,255,0.7);
+        box-shadow: 0 0 8px rgba(255,200,255,0.8);
+        animation: pulse 4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 0.2; transform: scale(1); }
+        50% { opacity: 0.9; transform: scale(1.4); }
+      }
+      .ui-container { position: relative; z-index: 2; padding: 1.25rem 1rem 0.75rem; }
+      .header { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: flex-start; }
+      .title-block { flex: 1 1 18rem; min-width: 0; }
+      .title-block h1 {
+        margin: 0;
+        font-size: clamp(1.25rem, 2vw, 2.25rem);
+        line-height: 1.05;
+        background: linear-gradient(90deg, #f9c6ff, #fcd4ff, #c084fc);
+        -webkit-background-clip: text;
+        color: transparent;
+        text-shadow: 0 0 24px rgba(232,121,249,0.35);
+      }
+      .title-block p {
+        margin: 0.75rem 0 0;
+        max-width: 42rem;
+        font-size: 0.85rem;
+        line-height: 1.6;
+        color: rgba(203,213,255,0.76);
+      }
+      .stats-panel {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(10rem, 1fr));
+        gap: 0.75rem;
+        width: 100%;
+        max-width: 32rem;
+      }
+      .stats-card,
+      .action-button {
+        border-radius: 1rem;
+        border: 1px solid rgba(255,255,255,0.12);
+        background: rgba(0,0,0,0.3);
+        backdrop-filter: blur(12px);
+        padding: 1rem;
+      }
+      .stats-card { text-align: center; }
+      .stats-card .label {
+        display: block;
+        font-size: 0.68rem;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: rgba(192,132,252,0.72);
+      }
+      .stats-card .value {
+        margin-top: 0.5rem;
+        font-size: 1.4rem;
+        font-weight: 700;
+      }
+      .stats-card .subvalue {
+        margin-top: 0.35rem;
+        font-size: 0.78rem;
+        color: rgba(255,255,255,0.65);
+      }
+      .action-button {
+        min-height: 3rem;
+        padding: 0 1rem;
+        font-weight: 600;
+        color: #fff;
+        background: rgba(255,255,255,0.06);
+        transition: background-color 0.2s ease;
+      }
+      .action-button:hover { background: rgba(255,255,255,0.12); }
+      .hint-banner { margin-top: 1rem; display: none; justify-content: center; }
+      .hint-banner.visible { display: flex; }
+      .hint-box {
+        border-radius: 9999px;
+        padding: 0.85rem 1rem;
+        background: rgba(250,204,21,0.12);
+        border: 1px solid rgba(251,191,36,0.3);
+        color: #f7e3ad;
+        font-size: 0.86rem;
+      }
+      .play-area {
+        position: relative;
+        z-index: 1;
+        min-height: min(62vh, 40rem);
+        margin: 1rem;
+        border-radius: 2rem;
+        background: rgba(8,4,23,0.85);
+        border: 1px solid rgba(255,255,255,0.08);
+        overflow: hidden;
+        touch-action: none;
+      }
+      .play-area::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(168,85,247,0.12), transparent 40%), radial-gradient(circle at 30% 20%, rgba(255,255,255,0.12), transparent 20%);
+        pointer-events: none;
+      }
+      .items-layer,
+      .player { position: absolute; }
+      .items-layer { inset: 0; }
+      .item {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 1rem;
+        border: 1px solid rgba(255,255,255,0.16);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.28);
+        overflow: hidden;
+      }
+      .item.heart { background: linear-gradient(145deg, #27133f, #321049); }
+      .item.memory { background: linear-gradient(145deg, rgba(30,27,75,0.96), rgba(67,56,202,0.7)); }
+      .item.cake { background: linear-gradient(145deg, #2b2649, #241d35); }
+      .item.wrong { background: linear-gradient(145deg, #3f1d22, #19080e); }
+      .item span,
+      .item img { display: block; width: 100%; height: 100%; text-align: center; }
+      .item span { font-size: clamp(1.2rem, 2vw, 2rem); }
+      .item img { object-fit: cover; border-radius: 0.9rem; }
+      .player {
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        border-radius: 1.5rem 1.5rem 1.2rem 1.2rem;
+        background: linear-gradient(180deg, rgba(152,53,159,0.95), rgba(67,34,147,0.95));
+        border: 1px solid rgba(255,255,255,0.2);
+        box-shadow: 0 0 24px rgba(192,38,211,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+      }
+      .player::before { content: '🧺'; font-size: 1.5rem; line-height: 1; margin-bottom: 0.3rem; }
+      .player.shake { animation: shake-player 0.45s ease-in-out; }
+      @keyframes shake-player {
+        0% { transform: translateX(-50%) translateX(0); }
+        10% { transform: translateX(-50%) translateX(-10px); }
+        30% { transform: translateX(-50%) translateX(8px); }
+        50% { transform: translateX(-50%) translateX(-6px); }
+        70% { transform: translateX(-50%) translateX(4px); }
+        100% { transform: translateX(-50%) translateX(0); }
+      }
+      .info-bar { text-align: center; margin: 0.75rem 0 1rem; font-size: 0.82rem; color: rgba(203,213,255,0.65); }
+      .floating-layer { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+      .floating-message {
+        position: absolute;
+        max-width: min(22rem, 90vw);
+        transform: translate(-50%, 0);
+        border-radius: 1.5rem;
+        background: linear-gradient(135deg, rgba(63,11,136,0.96), rgba(124,58,237,0.9));
+        color: #fff;
+        padding: 0.85rem 1rem;
+        font-size: 0.9rem;
+        box-shadow: 0 0 40px rgba(236,72,153,0.25);
+        opacity: 0;
+        animation: float-in-out 2.6s ease forwards;
+      }
+      @keyframes float-in-out {
+        0% { opacity: 0; transform: translate(-50%, 16px) scale(0.95); }
+        15% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+        85% { opacity: 1; }
+        100% { opacity: 0; transform: translate(-50%, -32px) scale(0.95); }
+      }
+      .paused-overlay,
+      .end-screen {
+        position: fixed;
+        inset: 0;
+        z-index: 10;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(0,0,0,0.65);
+      }
+      .paused-overlay.visible,
+      .end-screen.visible { display: flex; }
+      .modal-card {
+        width: min(100%, 28rem);
+        border-radius: 2rem;
+        padding: 2rem;
+        background: rgba(16,9,39,0.96);
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 20px 80px rgba(0,0,0,0.45);
+        text-align: center;
+      }
+      .modal-card h2 { margin: 0; font-size: 1.6rem; }
+      .modal-card p { margin: 1rem 0 0; color: rgba(203,213,255,0.86); line-height: 1.7; }
+      .gift-button,
+      .end-button {
+        margin-top: 1.75rem;
+        width: 100%;
+        border-radius: 1.5rem;
+        border: none;
+        padding: 1rem 1.25rem;
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #c084fc 0%, #f472b6 100%);
+        box-shadow: 0 15px 35px rgba(244,114,182,0.2);
+      }
+      .gift-button:hover,
+      .end-button:hover { filter: brightness(1.05); }
+      .message-opened {
+        margin-top: 1.5rem;
+        border-radius: 1.5rem;
+        padding: 1.25rem;
+        background: rgba(99,102,241,0.14);
+        color: #ede9fe;
+        white-space: pre-line;
+      }
+      .heart-stream { position: absolute; inset: 0; pointer-events: none; }
+      .heart-stream span {
+        position: absolute;
+        font-size: 1.35rem;
+        opacity: 0;
+        animation: heart-rise linear infinite;
+      }
+      @keyframes heart-rise {
+        0% { transform: translateY(0); opacity: 0; }
+        8% { opacity: 0.9; }
+        100% { transform: translateY(-120vh); opacity: 0; }
+      }
+      @media (max-width: 768px) {
+        .stats-panel { grid-template-columns: 1fr; }
+        .play-area { margin: 0.75rem; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="background-layer"></div>
+      <div class="particle-layer" id="particle-layer" aria-hidden="true"></div>
+      <div class="ui-container">
+        <div class="header">
+          <div class="title-block">
+            <h1>Birthday Catch</h1>
+            <p>Catch love & memories. Reach 120 points to unlock your gift.</p>
+          </div>
+          <div class="stats-panel">
+            <div class="stats-card">
+              <span class="label">Score</span>
+              <strong class="value" id="score-value">0</strong>
+            </div>
+            <div class="stats-card">
+              <span class="label">Combo</span>
+              <strong class="value" id="combo-value">0×</strong>
+              <span class="subvalue" id="multiplier-value">Mult 1.00×</span>
+            </div>
+            <div class="stats-card">
+              <span class="label">Best</span>
+              <strong class="value" id="highscore-value">0</strong>
+            </div>
+            <button type="button" class="action-button" id="pause-button">Pause</button>
+            <button type="button" class="action-button" id="restart-button">Restart</button>
+          </div>
+        </div>
+        <div class="hint-banner" id="unlock-hint">
+          <div class="hint-box">Almost there — the gift is waking up… ✨</div>
+        </div>
+      </div>
+      <div class="play-area" id="play-area" tabindex="0">
+        <div class="items-layer" id="items-layer"></div>
+        <div class="player" id="player"></div>
+      </div>
+      <p class="info-bar">← → or A D · drag on the playfield to steer</p>
+      <div class="floating-layer" id="floating-layer"></div>
+      <div class="paused-overlay" id="paused-overlay">
+        <div class="modal-card">
+          <h2>Paused</h2>
+          <p>Take a breath. The memories can wait.</p>
+          <button type="button" class="gift-button" id="resume-button">Continue</button>
+        </div>
+      </div>
+      <div class="end-screen" id="end-screen">
+        <div class="modal-card" id="end-card">
+          <div id="gift-prompt">
+            <p style="letter-spacing:0.2em;text-transform:uppercase;color:rgba(252,211,77,0.8);margin-bottom:1rem;">You unlocked something special</p>
+            <button type="button" class="gift-button" id="open-gift-button">Open your gift</button>
+          </div>
+          <div class="message-opened" id="gift-message" style="display:none;"></div>
+          <button type="button" class="end-button" id="play-again-button" style="display:none;">Play again</button>
+        </div>
+        <div class="heart-stream" id="heart-stream" aria-hidden="true"></div>
+      </div>
+    </div>
+    <script>
+      const GAME_CONFIG = {
+        friendName: 'Alex',
+        personalMessage: 'Every year with you feels like a new chapter of something beautiful.\nThank you for the laughter, the quiet moments, and all the memories we keep collecting.\nHere’s to you — today and always.',
+        scoreToUnlock: 120,
+        memories: [
+          { src: '1.png', message: 'Remember this moment? 😄' },
+          { src: '2.png', message: 'You make ordinary days feel special.' },
+          { src: '3.png', message: 'This one still makes me smile.' }
+        ],
+        heartMessages: [
+          'You make my life better 💖',
+          'Every beat reminds me of you',
+          'Love you more than pixels can say',
+          'You’re my favorite person',
+          'Grateful for you, always'
+        ],
+        cakeMessage: 'A rare sweet moment — just like you! 🎂',
+        wrongMessages: ['Not that one!', 'Oops — stay focused!', 'Almost! Try again'],
+        spawnWeights: { heart: 38, memory: 22, cake: 6, wrong: 34 }
+      };
+      const HIGH_KEY = 'birthday-catch-highscore';
+      const playArea = document.getElementById('play-area');
+      const itemsLayer = document.getElementById('items-layer');
+      const player = document.getElementById('player');
+      const pausedOverlay = document.getElementById('paused-overlay');
+      const endScreen = document.getElementById('end-screen');
+      const unlockHint = document.getElementById('unlock-hint');
+      const floatingLayer = document.getElementById('floating-layer');
+      const scoreValue = document.getElementById('score-value');
+      const comboValue = document.getElementById('combo-value');
+      const multiplierValue = document.getElementById('multiplier-value');
+      const highScoreValue = document.getElementById('highscore-value');
+      const pauseButton = document.getElementById('pause-button');
+      const restartButton = document.getElementById('restart-button');
+      const resumeButton = document.getElementById('resume-button');
+      const openGiftButton = document.getElementById('open-gift-button');
+      const playAgainButton = document.getElementById('play-again-button');
+      const giftPrompt = document.getElementById('gift-prompt');
+      const giftMessage = document.getElementById('gift-message');
+      const heartStream = document.getElementById('heart-stream');
+      let dims = { w: 0, h: 0 };
+      let layout = { scale: 1, playerW: 96, playerH: 56, itemSize: 52, bottom: 24 };
+      let playerX = 0;
+      let items = [];
+      let keys = { left: false, right: false };
+      let lastT = 0;
+      let spawnAcc = 0;
+      let time = 0;
+      let itemId = 0;
+      let score = 0;
+      let combo = 0;
+      let multiplier = 1;
+      let highScore = 0;
+      let paused = false;
+      let ended = false;
+      let shaking = false;
+      function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
+      function getLayoutMetrics(playFieldWidth) {
+        const w = Math.max(260, playFieldWidth);
+        const scale = Math.min(1.18, Math.max(0.6, w / 400));
+        return {
+          scale,
+          playerW: Math.round(96 * scale),
+          playerH: Math.round(56 * scale),
+          itemSize: Math.round(52 * scale),
+          bottom: Math.max(8, Math.min(32, Math.round(12 + w * 0.035)))
+        };
+      }
+      function loadHighScore() {
+        try { const value = Number(localStorage.getItem(HIGH_KEY)); return Number.isFinite(value) ? value : 0; }
+        catch (e) { return 0; }
+      }
+      function saveHighScore(value) {
+        try { localStorage.setItem(HIGH_KEY, String(value)); } catch (e) {}
+      }
+      function createParticles() {
+        for (let i = 0; i < 72; i += 1) {
+          const el = document.createElement('span');
+          const size = 0.5 + Math.random() * 2;
+          el.style.left = `${Math.random() * 100}%`;
+          el.style.top = `${Math.random() * 100}%`;
+          el.style.width = `${size}px`;
+          el.style.height = `${size}px`;
+          el.style.animationDuration = `${3 + Math.random() * 6}s`;
+          document.getElementById('particle-layer').appendChild(el);
+        }
+      }
+      function measureLayout() {
+        const rect = playArea.getBoundingClientRect();
+        dims = { w: rect.width, h: rect.height };
+        layout = getLayoutMetrics(rect.width);
+        playerX = clamp(playerX || dims.w / 2, layout.playerW / 2, dims.w - layout.playerW / 2);
+        player.style.width = `${layout.playerW}px`;
+        player.style.height = `${layout.playerH}px`;
+        player.style.bottom = `${layout.bottom}px`;
+        renderPlayer();
+      }
+      function pushMessage(text) {
+        const message = document.createElement('div');
+        message.className = 'floating-message';
+        message.textContent = text;
+        message.style.left = `${12 + Math.random() * 76}%`;
+        message.style.top = `${28 + Math.random() * 18}%`;
+        floatingLayer.appendChild(message);
+        window.setTimeout(() => message.remove(), 2600);
+      }
+      function spawnItem() {
+        const weights = GAME_CONFIG.spawnWeights;
+        let r = Math.random() * (weights.heart + weights.memory + weights.cake + weights.wrong);
+        const type = (r -= weights.heart) < 0 ? 'heart' : (r -= weights.memory) < 0 ? 'memory' : (r -= weights.cake) < 0 ? 'cake' : 'wrong';
+        const xPercent = 10 + Math.random() * 80;
+        const memoryIndex = type === 'memory' ? Math.floor(Math.random() * Math.max(1, GAME_CONFIG.memories.length)) : 0;
+        items.push({ id: ++itemId, xPercent, yPx: -layout.itemSize - 4, type, memoryIndex });
+      }
+      function renderItems() {
+        itemsLayer.innerHTML = '';
+        for (const item of items) {
+          const el = document.createElement('div');
+          el.className = `item ${item.type}`;
+          el.style.left = `calc(${item.xPercent}% - ${layout.itemSize / 2}px)`;
+          el.style.top = `${item.yPx}px`;
+          el.style.width = `${layout.itemSize}px`;
+          el.style.height = `${layout.itemSize}px`;
+          if (item.type === 'memory') {
+            const mem = GAME_CONFIG.memories[item.memoryIndex % GAME_CONFIG.memories.length];
+            const img = document.createElement('img');
+            img.src = mem.src;
+            img.alt = 'Memory';
+            el.appendChild(img);
+          } else {
+            const span = document.createElement('span');
+            span.textContent = item.type === 'heart' ? '❤️' : item.type === 'cake' ? '🎂' : '❌';
+            el.appendChild(span);
+          }
+          itemsLayer.appendChild(el);
+        }
+      }
+      function renderPlayer() {
+        player.style.left = `${playerX}px`;
+        if (shaking) player.classList.add('shake'); else player.classList.remove('shake');
+      }
+      function updateStats() {
+        scoreValue.textContent = score;
+        comboValue.textContent = `${combo}×`;
+        multiplierValue.textContent = `Mult ${multiplier.toFixed(2)}×`;
+        highScoreValue.textContent = highScore;
+        unlockHint.classList.toggle('visible', score >= GAME_CONFIG.scoreToUnlock - 35 && score < GAME_CONFIG.scoreToUnlock);
+      }
+      function setPaused(state) {
+        paused = state;
+        pausedOverlay.classList.toggle('visible', paused);
+        pauseButton.textContent = paused ? 'Resume' : 'Pause';
+      }
+      function setEnded(state) {
+        ended = state;
+        endScreen.classList.toggle('visible', ended);
+        if (!ended) {
+          giftPrompt.style.display = 'block';
+          giftMessage.style.display = 'none';
+          playAgainButton.style.display = 'none';
+          giftMessage.textContent = '';
+          heartStream.innerHTML = '';
+        }
+      }
+      function applyScore(delta, text, good) {
+        score = Math.max(0, score + delta);
+        if (text) pushMessage(text);
+        if (good) {
+          combo += 1;
+          multiplier = Math.min(2, 1 + combo * 0.04);
+        } else {
+          combo = 0;
+          multiplier = 1;
+        }
+        highScore = Math.max(highScore, score);
+        saveHighScore(highScore);
+        if (score >= GAME_CONFIG.scoreToUnlock && !ended) window.setTimeout(endGame, 450);
+        updateStats();
+      }
+      function endGame() {
+        setEnded(true);
+        items = [];
+        renderItems();
+      }
+      function restartGame() {
+        ended = false;
+        paused = false;
+        shaking = false;
+        score = 0;
+        combo = 0;
+        multiplier = 1;
+        spawnAcc = 0;
+        time = 0;
+        lastT = 0;
+        items = [];
+        playerX = clamp(playerX || dims.w / 2, layout.playerW / 2, dims.w - layout.playerW / 2);
+        setPaused(false);
+        setEnded(false);
+        updateStats();
+        renderItems();
+      }
+      function onPointer(clientX) {
+        if (paused || ended) return;
+        const rect = playArea.getBoundingClientRect();
+        playerX = clamp(clientX - rect.left, layout.playerW / 2, dims.w - layout.playerW / 2);
+        renderPlayer();
+      }
+      function playSound(type) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.type = type;
+        osc.frequency.setValueAtTime(300, ctx.currentTime);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      }
+      function loop(timestamp) {
+        if (paused || ended) { lastT = timestamp; requestAnimationFrame(loop); return; }
+        if (!lastT) lastT = timestamp;
+        const dt = Math.min(48, timestamp - lastT);
+        lastT = timestamp;
+        const elapsed = (time += dt / 1000);
+        const vy = Math.min(400, 130 + elapsed * 14);
+        const speed = Math.min(640, 380 + dims.w * 0.55);
+        if (keys.left) playerX -= speed * (dt / 1000);
+        if (keys.right) playerX += speed * (dt / 1000);
+        playerX = clamp(playerX, layout.playerW / 2, dims.w - layout.playerW / 2);
+        renderPlayer();
+        const spawnEvery = Math.max(360, 1050 - elapsed * 28);
+        spawnAcc += dt;
+        while (spawnAcc >= spawnEvery) {
+          spawnAcc -= spawnEvery;
+          spawnItem();
+        }
+        const catchY = dims.h - layout.bottom - layout.playerH;
+        const pcx = playerX;
+        const hitW = (layout.itemSize / 2 + layout.playerW / 2) * 0.78;
+        const vPad = Math.max(4, 6 * layout.scale);
+        const vPadLo = Math.max(12, 26 * layout.scale);
+        const nextItems = [];
+        for (const item of items) {
+          const ny = item.yPx + vy * (dt / 1000);
+          const icx = (item.xPercent / 100) * dims.w;
+          const caught = ny + layout.itemSize >= catchY - vPad && ny <= catchY + vPadLo && Math.abs(icx - pcx) < hitW;
+          if (caught) {
+            if (item.type === 'heart') {
+              playSound('sine');
+              const msg = GAME_CONFIG.heartMessages[Math.floor(Math.random() * GAME_CONFIG.heartMessages.length)];
+              applyScore(Math.round(10 * multiplier), msg, true);
+            } else if (item.type === 'memory') {
+              playSound('triangle');
+              const mem = GAME_CONFIG.memories[item.memoryIndex % GAME_CONFIG.memories.length];
+              applyScore(Math.round(20 * multiplier), mem.message || 'Remember this? 💖', true);
+            } else if (item.type === 'cake') {
+              playSound('triangle');
+              applyScore(Math.round(50 * multiplier), GAME_CONFIG.cakeMessage, true);
+            } else {
+              playSound('sawtooth');
+              shaking = true;
+              setTimeout(() => { shaking = false; renderPlayer(); }, 450);
+              applyScore(-10, GAME_CONFIG.wrongMessages[Math.floor(Math.random() * GAME_CONFIG.wrongMessages.length)], false);
+            }
+          } else if (ny <= dims.h + 40) {
+            nextItems.push({ ...item, yPx: ny });
+          }
+        }
+        items = nextItems;
+        renderItems();
+        requestAnimationFrame(loop);
+      }
+      function showGift() {
+        giftPrompt.style.display = 'none';
+        giftMessage.style.display = 'block';
+        playAgainButton.style.display = 'block';
+        giftMessage.textContent = `${GAME_CONFIG.personalMessage}\n\nWith love 💖`;
+        const count = 24;
+        heartStream.innerHTML = '';
+        for (let i = 0; i < count; i += 1) {
+          const heart = document.createElement('span');
+          heart.textContent = '💕';
+          heart.style.left = `${Math.random() * 92 + 4}%`;
+          heart.style.bottom = '-4rem';
+          heart.style.animationDuration = `${4 + Math.random() * 3}s`;
+          heart.style.animationDelay = `${Math.random() * 1.5}s`;
+          heartStream.appendChild(heart);
+        }
+      }
+      window.addEventListener('resize', measureLayout);
+      window.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') keys.left = true;
+        if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') keys.right = true;
+        if (event.key === 'Escape' && !ended) setPaused(!paused);
+      });
+      window.addEventListener('keyup', (event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'a' || event.key === 'A') keys.left = false;
+        if (event.key === 'ArrowRight' || event.key === 'd' || event.key === 'D') keys.right = false;
+      });
+      playArea.addEventListener('mousemove', (event) => onPointer(event.clientX));
+      playArea.addEventListener('mousedown', (event) => onPointer(event.clientX));
+      playArea.addEventListener('touchstart', (event) => { const touch = event.touches[0]; if (touch) onPointer(touch.clientX); });
+      playArea.addEventListener('touchmove', (event) => { const touch = event.touches[0]; if (touch) onPointer(touch.clientX); });
+      pauseButton.addEventListener('click', () => setPaused(!paused));
+      restartButton.addEventListener('click', restartGame);
+      resumeButton.addEventListener('click', () => setPaused(false));
+      openGiftButton.addEventListener('click', showGift);
+      playAgainButton.addEventListener('click', () => { restartGame(); setEnded(false); });
+      highScore = loadHighScore();
+      updateStats();
+      createParticles();
+      measureLayout();
+      requestAnimationFrame(loop);
+    </script>
+  </body>
+</html>
